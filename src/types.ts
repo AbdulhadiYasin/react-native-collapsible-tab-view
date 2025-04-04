@@ -89,7 +89,7 @@ export type CollapsibleProps = {
    * 0 and 1, or `null` to disable snapping.
    * @default null
    */
-  snapThreshold?: number | null
+  snapThreshold?: number[] | null
   children: TabReactElement<TabName>[] | TabReactElement<TabName>
 
   renderHeader?: (props: TabBarProps<TabName>) => React.ReactElement | null
@@ -139,7 +139,7 @@ export type ContextType<T extends TabName = TabName> = {
   tabBarHeight: number
   containerHeight: number
   revealHeaderOnScroll: boolean
-  snapThreshold: number | null | undefined
+  snapThreshold: number[] | null | undefined
   /**
    * Index value, including decimal points. Use this to interpolate tab
    * indicators.

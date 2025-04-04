@@ -306,50 +306,77 @@ export const useScrollHandlerY = (name: TabName) => {
     'worklet'
     if (!enabled.value) return
 
-    if (typeof snapThreshold === 'number') {
-      if (revealHeaderOnScroll) {
-        if (accDiffClamp.value > 0) {
-          if (
-            scrollYCurrent.value >
-            headerScrollDistance.value * snapThreshold
-          ) {
-            if (
-              accDiffClamp.value <=
-              headerScrollDistance.value * snapThreshold
-            ) {
-              // snap down
-              accDiffClamp.value = withTiming(0)
-            } else if (accDiffClamp.value < headerScrollDistance.value) {
-              // snap up
-              accDiffClamp.value = withTiming(headerScrollDistance.value)
+    // Normalize snapThreshold to be an array
+    const thresholds = Array.isArray(snapThreshold)
+      ? snapThreshold
+      : typeof snapThreshold === 'number'
+        ? [snapThreshold]
+        : []
 
-              if (scrollYCurrent.value < headerScrollDistance.value) {
-                scrollAnimation.value = scrollYCurrent.value
-                scrollAnimation.value = withTiming(headerScrollDistance.value)
-                //console.log('[${name}] sticky snap up')
-              }
-            }
-          } else {
-            accDiffClamp.value = withTiming(0)
+    // Skip snapping if no thresholds are defined
+    if (thresholds.length === 0) return
+
+    if (revealHeaderOnScroll) {
+      if (accDiffClamp.value > 0) {
+        // Find the closest threshold value
+        let targetThreshold = 0
+        let minDistance = Number.MAX_VALUE
+
+        for (const threshold of thresholds) {
+          const thresholdPosition = headerScrollDistance.value * threshold
+          const distance = Math.abs(scrollYCurrent.value - thresholdPosition)
+
+          if (distance < minDistance) {
+            minDistance = distance
+            targetThreshold = threshold
           }
         }
-      } else {
+
+        const targetPosition = headerScrollDistance.value * targetThreshold
+
         if (
-          scrollYCurrent.value <=
-          headerScrollDistance.value * snapThreshold
+          scrollYCurrent.value >
+          headerScrollDistance.value * Math.min(...thresholds)
         ) {
-          // snap down
-          snappingTo.value = 0
-          scrollAnimation.value = scrollYCurrent.value
-          scrollAnimation.value = withTiming(0)
-          //console.log('[${name}] snap down')
-        } else if (scrollYCurrent.value <= headerScrollDistance.value) {
-          // snap up
-          snappingTo.value = headerScrollDistance.value
-          scrollAnimation.value = scrollYCurrent.value
-          scrollAnimation.value = withTiming(headerScrollDistance.value)
-          //console.log('[${name}] snap up')
+          if (accDiffClamp.value <= targetPosition) {
+            // snap down
+            accDiffClamp.value = withTiming(0)
+          } else if (accDiffClamp.value < headerScrollDistance.value) {
+            // snap up
+            accDiffClamp.value = withTiming(headerScrollDistance.value)
+
+            if (scrollYCurrent.value < headerScrollDistance.value) {
+              scrollAnimation.value = scrollYCurrent.value
+              scrollAnimation.value = withTiming(headerScrollDistance.value)
+            }
+          }
+        } else {
+          accDiffClamp.value = withTiming(0)
         }
+      }
+    } else {
+      // Find the closest threshold to snap to
+      let closestThreshold = null
+      let minDistance = Number.MAX_VALUE
+
+      // Add boundary points (0 and 1) to consider full snap up or down
+      const snapPoints = [0, ...thresholds.filter((t) => t > 0 && t < 1), 1]
+
+      for (const threshold of snapPoints) {
+        const thresholdPosition = headerScrollDistance.value * threshold
+        const distance = Math.abs(scrollYCurrent.value - thresholdPosition)
+
+        if (distance < minDistance) {
+          minDistance = distance
+          closestThreshold = threshold
+        }
+      }
+
+      if (closestThreshold !== null) {
+        const snapPosition = headerScrollDistance.value * closestThreshold
+        snappingTo.value = snapPosition
+        scrollAnimation.value = scrollYCurrent.value
+        scrollAnimation.value = withTiming(snapPosition)
       }
     }
   }
