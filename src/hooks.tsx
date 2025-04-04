@@ -514,7 +514,11 @@ export const useScrollHandlerY = (name: TabName) => {
             if (hasGap || currIsOnTop) {
               nextPosition = accDiffClamp.value
             }
-          } else if (typeof snapThreshold === 'number') {
+          } else if (
+            Array.isArray(snapThreshold) ||
+            typeof snapThreshold === 'number'
+          ) {
+            // Handle both array and single number cases
             if (focusedIsOnTop) {
               nextPosition = snappingTo.value
             } else if (currIsOnTop) {
